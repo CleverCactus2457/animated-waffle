@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Team 2 NJCCIC CTF</title>
+<style>
+  :root{ --bg:#070c18; --panel:#0e1629; --ink:#e6edf6; --muted:#9aa4b2; --accent:#5b9dff; --accent2:#a78bfa; --line:rgba(255,255,255,.09); --good:#10b981; --bad:#ef4444; --warn:#f59e0b; }
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial}
+  body{min-height:100dvh; position:relative; overflow-x:hidden}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px; position:relative; z-index:1}
+  header{position:sticky;top:0;z-index:2;background:rgba(10,15,29,.6);border-bottom:1px solid var(--line);padding:12px 16px; backdrop-filter: blur(12px) saturate(140%)}
+
+  .bg{position:fixed; inset:-20vmax; z-index:0; pointer-events:none; background:radial-gradient(36vmax 36vmax at 12% 16%, rgba(59,130,246,.25), transparent 60%), radial-gradient(44vmax 44vmax at 88% 12%, rgba(168,85,247,.25), transparent 60%), radial-gradient(42vmax 42vmax at 50% 94%, rgba(16,185,129,.18), transparent 60%); filter: blur(36px) saturate(140%); animation: float 18s ease-in-out infinite alternate}
+  @keyframes float{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(0,-3%,0) scale(1.04)}}
+
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .brand{display:flex;gap:10px;align-items:center}
+  .logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;color:#001133;font-weight:900;box-shadow:0 8px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.35)}
+  .brand h1{margin:0;font-size:18px; background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text; background-clip:text; color:transparent; letter-spacing:.2px}
+
+  .grid{display:grid;gap:14px}
+  .two{grid-template-columns: 1.1fr .9fr}
+  @media (max-width: 900px){ .two{grid-template-columns:1fr} }
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;position:relative;box-shadow:0 10px 26px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.05)}
+  .muted{color:var(--muted)} .good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .btn{padding:10px 16px;background:#0b1223;color:#eaf2ff;border:1px solid rgba(255,255,255,.12);border-radius:12px;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.15)}
+  .btn:hover{filter:brightness(1.06)}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:rgba(255,255,255,.18)}
+
+  input[type="text"]{padding:10px 12px;background:rgba(15,23,42,.55);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow: inset 0 1px 0 rgba(255,255,255,.06); outline:none}
+
+  .titleRow{display:flex;justify-content:space-between;align-items:center;gap:8px;position:relative;z-index:2}
+  .lock{font-size:12px;color:var(--muted)}
+  .flagline{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+
+  .progress{position:relative;height:14px;background:rgba(14,22,40,.6);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .progress>span{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .25s ease}
+  .steps{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-top:10px}
+  .step{display:grid;place-items:center;height:28px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;color:var(--muted)}
+  .step.done{background:rgba(16,185,129,.14);color:#b1f3d6;border-color:rgba(16,185,129,.4)}
+  .step.active{background:rgba(59,130,246,.14);color:#cde3ff;border-color:rgba(59,130,246,.4)}
+
+  .preblock{white-space:pre-wrap;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:10px;max-height:240px;overflow:auto;margin-top:8px}
+
+  .check{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:rgba(16,185,129,.15); border:1px solid rgba(16,185,129,.6); color:var(--good);font-weight:900; font-size:12px; visibility:hidden}
+  .veil{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.45);border-radius:16px;opacity:0;pointer-events:none;padding-top:64px}
+  [data-locked="true"] .veil{opacity:1;pointer-events:auto}
+
+  .fabReset{position:fixed;right:16px;bottom:16px;z-index:3;padding:12px 16px;border-radius:14px;background:linear-gradient(180deg,#ff7a7a,#ef4444);border:1px solid rgba(255,255,255,.18);color:#fff;font-weight:900;box-shadow:0 12px 26px rgba(0,0,0,.35)}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(14,22,40,.8);border:1px solid var(--line);color:var(--ink);padding:10px 14px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s ease}
+  .toast.show{opacity:1}
+  .footer{color:#7c8aa0;text-align:center;padding:16px 0}
+
+  .confetti{position:fixed;top:-10px;left:50%;width:8px;height:14px;border-radius:2px;opacity:.9;pointer-events:none}
+  @keyframes confettiFall{ to{ transform:translate3d(var(--dx),105vh,0) rotate(var(--rot)); opacity:1 } }
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+<header>
+  <div class="row">
+    <div class="brand"><div class="logo">CTF</div><h1>Team 2 NJCCIC CTF</h1></div>
+  </div>
+</header>
+
+<main class="wrap" aria-live="polite">
+  <div class="grid two">
+    <section id="main">
+      <div class="card">
+        <h2>Welcome</h2>
+        <label class="row" for="playerName" style="gap:8px;margin-bottom:10px">
+          <span class="muted">Name (required to start):</span>
+          <input id="playerName" type="text" placeholder="enter your name" style="width:240px">
+          <span id="nameTick" class="check" aria-hidden="true">✓</span>
+        </label>
+        <div class="progress" aria-label="progress" style="margin:8px 0 6px">
+          <span id="progressBar"></span>
+          <span id="nameBadge" class="nameBadge" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:12px;color:#dbeafe">Name: —</span>
+        </div>
+        <p id="summary" class="muted mono" style="margin:.25rem 0 0">Solved 0/10 • Score 0</p>
+        <div class="steps" id="steps"></div>
+      </div>
+
+      <div class="grid" style="margin-top:14px">
+
+        <article class="card" id="c1" data-locked="true">
+          <div class="titleRow"><h3>1) Network Note</h3><span class="lock" id="lock1">Locked</span></div>
+          <div class="body" hidden>
+            <p>When this page loads, a tiny request leaves a clue in the <strong>Network</strong> log. Find the note word.</p>
+            <div class="row" style="margin-top:8px">
+              <button class="btn ghost" id="reseedBtn" type="button">Reseed Note</button>
+            </div>
+            <details class="muted" id="netTips" style="margin-top:6px"><summary>Having trouble?</summary>
+              <ol style="margin:6px 0 0 18px">
+                <li>Open DevTools → <strong>Network</strong>. Click <em>All</em>. Disable <em>Group by frame</em> (or expand the frame).</li>
+                <li>In the filter box, type <span class="mono">note=</span>.</li>
+                <li>If you still don’t see it, right‑click the CTF area → <em>Inspect</em> → in Elements, right‑click the iframe → <em>Open in new tab</em> → open Network, then press <em>Reseed Note</em>.</li>
+              </ol>
+            </details>
+            <div class="flagline"><input id="f1" type="text" placeholder="word"><button class="btn submit" data-id="1">Submit</button><span id="mark1"></span></div>
+          </div>
+          <div class="veil"><span class="muted">Enter your name to begin</span></div>
+        </article>
+
+        <article class="card" id="c2" data-locked="true">
+          <div class="titleRow"><h3>2) robots.txt</h3><span class="lock" id="lock2">Locked</span></div>
+          <div class="body" hidden>
+            <p>Which folder is blocked to crawlers?</p>
+            <button class="btn ghost reveal" data-reveal="robots">Reveal robots.txt</button>
+            <pre id="out_robots" class="preblock" hidden></pre>
+            <div class="flagline"><input id="f2" type="text" placeholder="folder name"><button class="btn submit" data-id="2">Submit</button><span id="mark2"></span></div>
+          </div>
+          <div class="veil"><span class="muted">Solve previous card</span></div>
+        </article>
+
+        <article class="card" id="c3" data-locked="true">
+          <div class="titleRow"><h3>3) EXIF Comment</h3><span class="lock" id="lock3">Locked</span></div>
+          <div class="body" hidden>
+            <p>Read the EXIF dump and decode the comment to a word.</p>
+            <button class="btn ghost reveal" data-reveal="exif">Reveal EXIF dump</button>
+            <pre id="out_exif" class="preblock" hidden></pre>
+            <div class="flagline"><input id="f3" type="text" placeholder="word"><button class="btn submit" data-id="3">Submit</button><span id="mark3"></span></div>
+          </div>
+          <div class="veil"><span class="muted">Solve previous card</span></div>
+        </article>
+
+        <article class="card" id="c4" data-locked="true">
+          <div class="titleRow"><h3>4) Vigenère</h3><span class="lock" id="lock4">Locked</span></div>
+          <div class="body" hidden>
+            <p>Use the given key to decode the short ciphertext.</p>
+            <button class="btn ghost reveal" data-reveal="vigenere">Reveal cipher</button>
+            <pre id="out_vigenere" class="preblock" hidden></pre>
+            <div class="flagline"><input id="f4" type="text" placeholder="word"><button class="btn submit" data-id="4">Submit</button><span id="mark4"></span></div>
+          </div>
+          <div class="veil"><span class="muted">Solve previous card</span></div>
+        </article>
+
+        <article class="card" id="c5" data-locked="true">
+          <div class="titleRow"><h3>5) Hex Dump</h3><span class="lock" id="lock5">Locked</span></div>
+          <div class="body" hidden>
+            <p>Convert the hex bytes to ASCII; it’s a single word.</p>
+            <button class="btn ghost reveal" data-reveal="hexdump">Reveal hex</button>
+            <pre id="out_hexdump" class="preblock" hidden></pre>
+            <div class="flagline"><input id="f5" type="text" placeholder="word"><button class="btn submit" data-id="5">Submit</button><span id="mark5"></span></div>
+          </div>
+          <div class="veil"><span class="muted">Solve previous card</span></div>
+        </article>
+
+        <article class="card" id="c6" data-locked="true">
+          <div class="titleRow"><h3>6) Basic Auth</h3><span class="lock" id="lock6">Locked</span></div>
+          <div class="body" hidden>
+            <p>Decode the credentials and submit the password.</p>
+            <button class="btn ghost reveal" data-reveal="basic">Reveal header</button>
+            <pre id="out_basic" class="preblock" hidden></pre>
+            <div class="flagline"><input id="f6" type="text" placeholder="password"><button class="btn submit" data-id="6">Submit</button><span id="mark6"></span></div>
+          </div>
+          <div class="veil"><span class="muted">Solve previous card</span></div>
+        </article>
+
+        <article class="card" id="c7" data-locked="true">
+          <div class="titleRow"><h3>7) Confusables</h3><span class="lock" id="lock7">Locked</span></div>
+          <div class="body" hidden>
+            <p>Zero‑widths + look‑alike letters → clean to a normal word.</p>
+            <button class="btn ghost reveal" data-reveal="confuse">Reveal string</button>
+            <pre id="out_confuse" class="preblock" hidden></pre>
+            <div class="flagline"><input id="f7" type="text" placeholder="word"><button class="btn submit" data-id="7">Submit</button><span id="mark7"></span></div>
+          </div>
+          <div class="veil"><span class="muted">Solve previous card</span></div>
+        </article>
+
+        <article class="card" id="c8" data-locked="true">
+          <div class="titleRow"><h3>8) Magic Number</h3><span class="lock" id="lock8">Locked</span></div>
+          <div class="body" hidden>
+            <p>The header lies; the first bytes tell the truth. What is the real file type? (three letters)</p>
+            <button class="btn ghost reveal" data-reveal="sigstruct">Reveal snippet</button>
+            <pre id="out_sigstruct" class="preblock" hidden></pre>
+            <div class="flagline"><input id="f8" type="text" placeholder="type"><button class="btn submit" data-id="8">Submit</button><span id="mark8"></span></div>
+          </div>
+          <div class="veil"><span class="muted">Solve previous card</span></div>
+        </article>
+
+        <article class="card" id="c9" data-locked="true">
+          <div class="titleRow"><h3>9) XOR with Key</h3><span class="lock" id="lock9">Locked</span></div>
+          <div class="body" hidden>
+            <p>Decrypt the hex by XORing each byte with <span class="mono">0x23</span>. Submit the word.</p>
+            <button class="btn ghost reveal" data-reveal="xor">Reveal ciphertext</button>
+            <pre id="out_xor" class="preblock" hidden></pre>
+            <div class="flagline"><input id="f9" type="text" placeholder="word"><button class="btn submit" data-id="9">Submit</button><span id="mark9"></span></div>
+          </div>
+          <div class="veil"><span class="muted">Solve previous card</span></div>
+        </article>
+
+        <article class="card" id="c10" data-locked="true">
+          <div class="titleRow"><h3>10) Final Flag</h3><span class="lock" id="lock10">Locked</span></div>
+          <div class="body" hidden>
+            <p>Decode the odd memo line (2–3 layers) and submit the exact flag.</p>
+            <button class="btn ghost reveal" data-reveal="memo">Reveal memo line</button>
+            <pre id="out_memo" class="preblock" hidden></pre>
+            <p class="muted">Flag format: <span class="mono">NJCCIC{hidden_message_found}</span></p>
+            <div class="flagline"><input id="f10" type="text" placeholder="NJCCIC{...}"><button class="btn submit" data-id="10" data-mode="raw">Submit</button><span id="mark10"></span></div>
+          </div>
+          <div class="veil"><span class="muted">Solve previous card</span></div>
+        </article>
+
+      </div>
+    </section>
+
+    <aside id="info">
+      <div class="card">
+        <h3>How to Play</h3>
+        <p class="muted">Beat <strong>10 challenges</strong>. They ramp up as you go. Read carefully and go step‑by‑step. Good luck.</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<button id="floatingReset" class="fabReset" title="Reset (are you sure?)">Reset</button>
+<div id="toast" class="toast" role="status" aria-live="polite">Saved</div>
+<div class="footer">© 2025 Team 2 NJCCIC CTF</div>
+
+<script>
+'use strict';
+(()=>{
+  // UTF‑8‑safe Base64 helpers
+  function b64EncodeUTF8(str){
+    try{ const bytes = new TextEncoder().encode(str); let bin=''; for(const b of bytes) bin += String.fromCharCode(b); return btoa(bin);}catch(e){ return btoa(unescape(encodeURIComponent(str))); }
+  }
+  function b64DecodeUTF8(b64){
+    try{ const bin = atob(b64); const bytes = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i); return new TextDecoder().decode(bytes);}catch(e){ return decodeURIComponent(escape(atob(b64))); }
+  }
+
+  // High-school level answers (hashed)
+  const HASH = {
+    "1":"7de97367c9cdc3c6db31aa114057b65cea1a7bafc71cf0595a2931011526a0a3", // monitor
+    "2":"ac50e01690b1ed27763d092aa8c0bb74ea19e1d6177258aea950d9276858db3e", // honeypot
+    "3":"0c274639936717793d7695ef0373039e397acdabc247d9953d3c9209a95044cd", // cedar
+    "4":"608738e4ac086c407df30170a91d0df99790ad277058b64cd8ee0b24cb29dfa3", // orchid
+    "5":"4cc7a4b341d8ce3315ea112ebb01e664bd328e88781db0f4bbc0e3f65e201bf9", // keystone
+    "6":"404355522396b92953086038cf05a41b27a9f1368be92c0e6b71a1e8c93f420a", // homework (punctuation ignored by normalizer)
+    "7":"230cff7a11b2709b1f1a3f4492b504338f6c93d26d75ab511faf97282a14ab30", // spruce
+    "8":"4a70fe9aa6436e02c2dea340fbd1e352e4ef2d8ce6ca52ad25d4b95471fc8bf2", // zip
+    "9":"b0d51c58c8b9c1f458fadf16c7d375630ef51da4df81915893b05c0fa4ed8bc6", // vector
+    "10raw":"e12026ffc8b5bbdf711bc0615a744ae0c7a3befbd30bd78ccb351505d0138cb3" // NJCCIC{hidden_message_found}
+  };
+
+  // Artifacts for reveals
+  const ART = {
+    robots: btoa(
+`User-agent: *
+Disallow: /honeypot
+Allow: /public
+Sitemap: https://example.test/sitemap.xml`
+    ),
+    exif: btoa(
+`ExifTool Version Number : 12.00
+File Name               : badge.jpg
+MIME Type               : image/jpeg
+Comment                 : Y2VkYXI=`
+    ),
+    vigenere: btoa(
+`Key: garden
+Ciphertext: urtkmq`
+    ),
+    hexdump: btoa(
+`6b 65 79 73 74 6f 6e 65`
+    ),
+    basic: btoa(
+`Authorization: Basic dGVhY2hlcjpob21ld29yayE=`
+    ),
+    // Confusables includes Cyrillic s (\u0455) and zero‑widths (\u200B, \u200D)
+    confuse: b64EncodeUTF8('Word: \u0455p\u200Br\u200Du\u200Bc\u200Be'),
+    sigstruct: btoa(
+`Response Headers:
+Content-Type: text/plain
+
+Body (first bytes): PK\u0003\u0004 ... (ZIP)
+Footer marker: (end of central directory)`
+    ),
+    xor: btoa(
+`Ciphertext (hex): 554640574c51
+XOR key: 0x23`
+    ),
+    memo: btoa(
+`Subject: Internal memo (redacted)
+Note: One line looks odd:
+ENCODED: N2Q2NDZlNzU2ZjY2NWY2NTY3NjE3MzczNjU2ZDVmNmU2NTY0NjQ2OTY4N2I0MzQ5NDM0MzRhNGU=
+
+Hint 1: Maybe it's Base64.
+Hint 2: What you get looks like hex.
+Hint 3: Reverse might help at the end.`
+    )
+  };
+
+  const KEY = 'ctf_team2_hs_v1';
+  const TOTAL = 10;
+  // ---- Cookie + localStorage durable storage (GitHub Pages friendly) ----
+  const COOKIE_MAX_AGE = 60*60*24*365; // 1 year
+  function cookieAttrs(){ return `; Max-Age=${COOKIE_MAX_AGE}; Path=/; SameSite=Lax` + (location.protocol==='https:'?'; Secure':''); }
+  function setCookie(name, value){ try{ document.cookie = `${name}=${encodeURIComponent(value)}${cookieAttrs()}`; }catch(e){} }
+  function getCookie(name){ try{ const m = document.cookie.match(new RegExp('(?:^|; )'+name.replace(/([.$?*|{}()\[\]\/+^])/g,'\$1')+'=([^;]*)')); return m? decodeURIComponent(m[1]) : null; }catch(e){ return null; } }
+  function delCookie(name){ try{ document.cookie = `${name}=; Max-Age=0; Path=/; SameSite=Lax` + (location.protocol==='https:'?'; Secure':''); }catch(e){} }
+  const storage = {
+    set(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} try{ setCookie(KEY, JSON.stringify(v)); }catch(e){} },
+    get(){ let raw=null; try{ raw = localStorage.getItem(KEY); }catch(e){} if(!raw){ raw = getCookie(KEY); } let obj=null; try{ if(raw) obj = JSON.parse(raw); }catch(e){} return obj; },
+    clear(){ try{ localStorage.removeItem(KEY); }catch(e){} delCookie(KEY); }
+  };
+  let state = { name:'', nameLocked:false, solved:{}, hints:0, celebrated:false };
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const norm = s => (s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+
+  async function sha256Hex(text){
+    const enc = new TextEncoder().encode(text);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  async function checkHash(key, userInput, mode){
+    if(!HASH[key]) return false;
+    const val = (mode==='raw') ? userInput : norm(userInput);
+    const got = await sha256Hex(val);
+    return (got === HASH[key]);
+  }
+
+  function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1100); }
+  function save(){ try{ storage.set(state); }catch(e){} toast('Saved'); } catch (e) {} }
+  function load(){
+    try{ const rawState = storage.get(); if(rawState) state = Object.assign(state, rawState); }catch(e){}
+    $('#playerName').value = state.name || '';
+    if(state.nameLocked){ $('#playerName').readOnly = true; $('#nameTick').style.visibility='visible'; }
+    renderSteps();
+    installNetworkTrail();
+    updateUI();
+    const reseed = document.getElementById('reseedBtn');
+    if(reseed){ reseed.addEventListener('click', ()=>{ installNetworkTrail(true); toast('Note reseeded'); }); }
+  }
+
+  function renderSteps(){ const s = $('#steps'); s.innerHTML = ''; for(let i=1;i<=TOTAL;i++){ const d=document.createElement('div'); d.className='step'; d.id='step'+i; d.textContent=i; s.appendChild(d);} }
+
+  function updateUI(){
+    $('#nameBadge').textContent = 'Name: '+(state.name||'—');
+    const solvedCount = Object.keys(state.solved).length; const score = Math.max(0, solvedCount*10 - (state.hints||0)*2);
+    $('#progressBar').style.width = Math.round(100*solvedCount/TOTAL)+'%';
+    $('#summary').textContent = `Solved ${solvedCount}/${TOTAL} • Score ${score}`;
+
+    for(let i=1;i<=TOTAL;i++){
+      const step = $('#step'+i); if(step){ step.classList.remove('done','active'); if(state.solved[i]) step.classList.add('done'); else if( (i===1 ? !!state.nameLocked : !!state.solved[i-1]) ) step.classList.add('active'); }
+      const card = $('#c'+i); const lock = $('#lock'+i); const body = card.querySelector('.body'); const prevSolved = (i===1)? !!state.nameLocked : !!state.solved[i-1]; const unlocked = prevSolved; const solved = !!state.solved[i];
+      card.dataset.locked = unlocked? 'false':'true'; lock.textContent = solved? 'Solved' : unlocked? 'Unlocked' : (i===1 && !state.nameLocked? 'Locked — enter name' : 'Locked'); lock.className = solved? 'good' : (unlocked? 'muted' : 'lock'); body.hidden = !unlocked;
+      if(solved){ const box = document.querySelector(`#f${i}`); if(box){ box.readOnly = true; box.disabled = true; } const btn = card.querySelector('.submit'); if(btn){ btn.disabled = true; } const mark = document.querySelector(`#mark${i}`); if(mark){ mark.textContent = '✔ correct'; mark.className = 'good'; } }
+    }
+
+    if(solvedCount === TOTAL && !state.celebrated){ state.celebrated = true; save(); confetti(220); toast('All challenges complete!'); }
+  }
+
+  // Reveal handlers
+  document.addEventListener('click', (e)=>{
+    const r = e.target.closest('.reveal'); if(!r) return;
+    const kind = r.dataset.reveal; const out = document.querySelector('#out_'+kind); if(!out) return;
+    if(!out.dataset.loaded){ out.textContent = b64DecodeUTF8(ART[kind]||''); out.dataset.loaded='1'; out.hidden=false; }
+    else { out.hidden = !out.hidden; }
+  });
+
+  // Name handling
+  $('#playerName').addEventListener('keydown',(e)=>{ if(e.key === 'Enter'){ e.preventDefault(); const val = $('#playerName').value.trim(); if(!val){ toast('Please enter a name'); return; } state.name = val; state.nameLocked = true; $('#playerName').readOnly = true; $('#nameTick').style.visibility='visible'; save(); updateUI(); installNetworkTrail(); $('#c1 .body').hidden = false; $('#c1').dataset.locked='false'; $('#lock1').textContent='Unlocked'; }});
+  $('#playerName').addEventListener('input',e=>{ if(state.nameLocked) return; state.name=e.target.value; save(); updateUI(); });
+
+  // Reset
+  $('#floatingReset').addEventListener('click',()=>{ if(confirm('Are you sure you want to reset all progress and name?')){ try{ storage.clear(); }catch(e){} location.reload(); } }); }catch(e){} location.reload(); } });
+
+  // Submit
+  document.addEventListener('click', async (e)=>{ const btn = e.target.closest('.submit'); if(!btn) return; const id = +btn.dataset.id; const mode = btn.dataset.mode || 'norm'; const input = document.querySelector(`#f${id}`); const mark = document.querySelector(`#mark${id}`); if(!input) return; const guess = input.value.trim(); if(!guess){ mark.textContent = 'enter something'; mark.className='warn'; return; } const key = (id===10? '10raw' : String(id)); const ok = await checkHash(key, guess, (id===10? 'raw' : 'norm')); if(ok){ state.solved[id] = Date.now(); input.readOnly=true; input.disabled=true; mark.textContent='✔ correct'; mark.className='good'; save(); updateUI(); scrollNext(id); } else { mark.textContent = '✖ try again'; mark.className = 'bad'; } });
+
+  function scrollNext(id){ const next = document.querySelector('#c'+(id+1)); if(next){ next.scrollIntoView({behavior:'smooth', block:'start'}); } }
+
+  // Challenge 1: seed multiple network requests with note=monitor
+  function installNetworkTrail(force){
+    if(!state.nameLocked && !force) return; // seed only after start unless forced
+    const qs = `note=monitor&sig=ok&t=${Date.now()}`;
+    const candidates = [];
+    // Based on current URL if http(s)
+    try{
+      const here = new URL(window.location.href);
+      if(here.protocol==='http:' || here.protocol==='https:'){
+        candidates.push(new URL(`_note.gif?${qs}`, here).href);
+        candidates.push(new URL(`?${qs}&via=fetch`, here).href);
+      }
+    }catch(e){}
+    // Root favicon as a stable target
+    try{
+      if(location.origin && (location.protocol==='http:' || location.protocol==='https:')){
+        candidates.push(`${location.origin}/favicon.ico?${qs}&via=icon`);
+      }
+    }catch(e){}
+    // Path-relative fallback
+    try{
+      const basePath = (location.pathname||'/').replace(/[^\/]*$/, '/');
+      candidates.push(basePath + `_note.gif?${qs}`);
+    }catch(e){}
+    const uniq = [...new Set(candidates.filter(Boolean))];
+    uniq.slice(0,3).forEach((url,i)=>{
+      // IMG
+      try{ const img = new Image(); img.src = url; img.width=1; img.height=1; img.alt=''; img.style.position='absolute'; img.style.left='-9999px'; document.body.appendChild(img);}catch(e){}
+      // FETCH (no-cors for cross-origin tolerance)
+      try{ fetch(url, {cache:'no-store', mode:'no-cors'}).catch(()=>{});}catch(e){}
+      // IFRAME for a Document-type entry
+      if(i===0){ try{ const ifr=document.createElement('iframe'); ifr.src=url; ifr.width=1; ifr.height=1; ifr.style.position='absolute'; ifr.style.left='-9999px'; ifr.style.border='0'; document.body.appendChild(ifr);}catch(e){} }
+    });
+    try{ console.log('[CTF] Seeded network notes:', uniq); }catch(e){}
+  }
+
+  // Lightweight diagnostics (console) to ensure each puzzle pipeline works
+  function runDiagnostics(){
+    try{
+      // 2) robots.txt → honeypot
+      const robots = b64DecodeUTF8(ART.robots);
+      console.assert(/Disallow:\s*\/honeypot/.test(robots),'robots.txt decode failed');
+      // 3) EXIF comment → cedar
+      const exif = b64DecodeUTF8(ART.exif);
+      const b64c = (exif.split('Comment                 : ')[1]||'').trim();
+      console.assert(atob(b64c)==='cedar','EXIF base64 decode failed');
+      // 4) Vigenère
+      const alpha='abcdefghijklmnopqrstuvwxyz';
+      const ct='urtkmq', key='garden';
+      let res=''; for(let i=0;i<ct.length;i++){ const c=alpha.indexOf(ct[i]); const k=alpha.indexOf(key[i%key.length]); res+=alpha[(c-k+26)%26]; }
+      console.assert(res==='orchid','Vigenere decode failed');
+      // 5) Hex → ASCII
+      const h='6b657973746f6e65'; const s=String.fromCharCode(...h.match(/../g).map(x=>parseInt(x,16))); console.assert(s==='keystone','Hex decode failed');
+      // 6) Basic auth
+      console.assert(atob('dGVhY2hlcjpob21ld29yayE=')==='teacher:homework!','Basic auth decode failed');
+      // 7) Confusables → spruce
+      const dirty = b64DecodeUTF8(ART.confuse).replace('Word: ','');
+      const cleaned = dirty.replace(/[\u200B\u200D]/g,'').replace('\u0455','s').replace(/[\u0400-\u04FF]/g, c=>({"\u0455":"s"}[c]||c));
+      const normalized = cleaned.normalize('NFKD');
+      console.assert(normalized==='spruce','Confusables normalize failed');
+      // 8) Magic number → zip
+      const sig = b64DecodeUTF8(ART.sigstruct);
+      console.assert(/PK\u0003\u0004/.test(sig),'Magic number missing');
+      // 9) XOR with 0x23
+      const hx='554640574c51'; const out=String.fromCharCode(...hx.match(/../g).map(x=>parseInt(x,16)^0x23)); console.assert(out==='vector','XOR decode failed');
+      // 10) Final: Base64 → hex → text → reverse
+      const memoText = b64DecodeUTF8(ART.memo); const line = (memoText.split('ENCODED: ')[1]||'').split('\n')[0].trim();
+      const mid = String.fromCharCode(...(line.match(/../g)||[]).map(x=>parseInt(x,16)));
+      const final = mid.split('').reverse().join('');
+      console.assert(final==='NJCCIC{hidden_message_found}','Final flag pipeline failed');
+      // 1) Seeded network request URL sanity
+      const base = location.pathname.replace(/[^\/]*$/, '/'); const now = Date.now(); const testUrl = base + `_note.gif?note=monitor&sig=ok&t=${now}`;
+      console.assert(/_note\.gif\?note=monitor/.test(testUrl),'Network note URL malformed');
+    }catch(e){ console.warn('Diagnostics failed', e); }
+  }
+
+  // Simple confetti
+  function confetti(n){ const colors = ['#8b5cf6','#22d3ee','#5b9dff','#34d399','#f472b6','#f59e0b','#60a5fa']; for(let i=0;i<n;i++){ const d = document.createElement('div'); d.className='confetti'; const c = colors[i % colors.length]; const left = (Math.random()*100-50).toFixed(2)+'vw'; d.style.left = '50%'; d.style.transform = `translateX(${left})`; d.style.background = c; d.style.setProperty('--dx', (Math.random()*100-50).toFixed(1)+'vw'); d.style.setProperty('--rot', (Math.random()*720-360).toFixed(0)+'deg'); d.style.animation = `confettiFall ${3+Math.random()*2}s ease-out forwards`; document.body.appendChild(d); setTimeout(()=> d.remove(), 6000); } }
+
+  // Keyboard helper
+  document.addEventListener('keydown',(e)=>{ if(e.key==='Enter' && e.target && e.target.tagName==='INPUT' && e.target.type==='text' && e.target.id.startsWith('f')){ const m = e.target.id.match(/^f(\d+)$/); if(!m) return; const id = parseInt(m[1],10); const btn = document.querySelector(`#c${id} .submit[data-id='${id}']`); if(btn){ e.preventDefault(); btn.click(); } } });
+
+  // Init
+  load();
+  runDiagnostics();
+})();
+</script>
+</body>
+</html>
