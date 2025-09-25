@@ -302,7 +302,7 @@ Hint 3: Reverse might help at the end.`
   const COOKIE_MAX_AGE = 60*60*24*365; // 1 year
   function cookieAttrs(){ return `; Max-Age=${COOKIE_MAX_AGE}; Path=/; SameSite=Lax` + (location.protocol==='https:'?'; Secure':''); }
   function setCookie(name, value){ try{ document.cookie = `${name}=${encodeURIComponent(value)}${cookieAttrs()}`; }catch(e){} }
-  function getCookie(name){ try{ const m = document.cookie.match(new RegExp('(?:^|; )'+name.replace(/([.$?*|{}()\[\]\/+^])/g,'\$1')+'=([^;]*)')); return m? decodeURIComponent(m[1]) : null; }catch(e){ return null; } }
+  function getCookie(name){ try{ const m = document.cookie.match(new RegExp('(?:^|; )'+name.replace(/([.$?*|{}()\[\]\/+^])/g,'\\$1')+'=([^;]*)')); return m? decodeURIComponent(m[1]) : null; }catch(e){ return null; } }
   function delCookie(name){ try{ document.cookie = `${name}=; Max-Age=0; Path=/; SameSite=Lax` + (location.protocol==='https:'?'; Secure':''); }catch(e){} }
   const storage = {
     set(v){ try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){} try{ setCookie(KEY, JSON.stringify(v)); }catch(e){} },
@@ -328,7 +328,7 @@ Hint 3: Reverse might help at the end.`
   }
 
   function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1100); }
-  function save(){ try{ storage.set(state); }catch(e){} toast('Saved'); } catch (e) {} }
+  function save(){ try{ storage.set(state); }catch(e){} toast('Saved'); }
   function load(){
     try{ const rawState = storage.get(); if(rawState) state = Object.assign(state, rawState); }catch(e){}
     $('#playerName').value = state.name || '';
@@ -371,7 +371,12 @@ Hint 3: Reverse might help at the end.`
   $('#playerName').addEventListener('input',e=>{ if(state.nameLocked) return; state.name=e.target.value; save(); updateUI(); });
 
   // Reset
-  $('#floatingReset').addEventListener('click',()=>{ if(confirm('Are you sure you want to reset all progress and name?')){ try{ storage.clear(); }catch(e){} location.reload(); } }); }catch(e){} location.reload(); } });
+  $('#floatingReset').addEventListener('click',()=>{
+    if(confirm('Are you sure you want to reset all progress and name?')){
+      try{ storage.clear(); }catch(e){}
+      location.reload();
+    }
+  });
 
   // Submit
   document.addEventListener('click', async (e)=>{ const btn = e.target.closest('.submit'); if(!btn) return; const id = +btn.dataset.id; const mode = btn.dataset.mode || 'norm'; const input = document.querySelector(`#f${id}`); const mark = document.querySelector(`#mark${id}`); if(!input) return; const guess = input.value.trim(); if(!guess){ mark.textContent = 'enter something'; mark.className='warn'; return; } const key = (id===10? '10raw' : String(id)); const ok = await checkHash(key, guess, (id===10? 'raw' : 'norm')); if(ok){ state.solved[id] = Date.now(); input.readOnly=true; input.disabled=true; mark.textContent='✔ correct'; mark.className='good'; save(); updateUI(); scrollNext(id); } else { mark.textContent = '✖ try again'; mark.className = 'bad'; } });
